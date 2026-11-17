@@ -1,6 +1,7 @@
 package fr.kapture.api.repository;
 
 import java.time.Instant;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -52,4 +53,25 @@ public interface EvenementRepository extends JpaRepository<Evenement, Long> {
             @Param("depuis") Instant depuis,
             @Param("jusquA") Instant jusquA,
             Pageable pageable);
+
+    /** Chronologie d'une session (v2) : signalements avec leur pseudonyme. */
+    @Query("""
+            select e from Evenement e
+            join fetch e.session s
+            join fetch e.utilisateur u
+            where s.id = :sessionId
+            """)
+    List<Evenement> chronologie(@Param("sessionId") Integer sessionId);
+
+    /**
+     * Suivi (v2) : couples {@code [affichage_id (Long), apparition_id (Long ou null)]}
+     * des signalements rattachés à un affichage, filtrables par session.
+     */
+    @Query("""
+            select af.id, ap.id from Evenement e
+            join e.affichage af
+            left join e.apparition ap
+            where (:sessionId is null or e.session.id = :sessionId)
+            """)
+    List<Object[]> affichagesEtApparitions(@Param("sessionId") Integer sessionId);
 }

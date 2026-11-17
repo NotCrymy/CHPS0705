@@ -19,6 +19,9 @@ import tools.jackson.databind.JsonNode;
  * <p>Les vérifications sémantiques (catégorie connue, existence du
  * pseudonyme, parsage du {@code timestamp}, forme du {@code payload}) sont
  * faites par le service.</p>
+ *
+ * <p>v2 ({@code docs/V2.md}) : {@code affichage_id} et {@code apparition_id}
+ * optionnels, contrôlés par le service (existence et même session).</p>
  */
 public record BugRequest(
 
@@ -46,7 +49,13 @@ public record BugRequest(
 
         /** Catégorie : {@link TypeBug}. */
         @NotBlank(message = "La catégorie est obligatoire.")
-        @JsonProperty("type_bug") String typeBug
+        @JsonProperty("type_bug") String typeBug,
+
+        /** v2 : variante affichée au moment du signalement (optionnel). */
+        @JsonProperty("affichage_id") Long affichageId,
+
+        /** v2 : apparition que le signalement couvre, si connue (optionnel). */
+        @JsonProperty("apparition_id") Long apparitionId
 
 ) {
 }
