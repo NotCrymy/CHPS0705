@@ -44,8 +44,8 @@ services:
       db:
         condition: service_healthy
 
-  # Dashboard (/) + popup en jeu (/report/) + jeu de démo (/demo/), servis par Nginx.
-  # Pas de depends_on sur api : le front fonctionne seul en mode mock (USE_MOCK dans front/public/js/shared.js).
+  # Console (/) + overlay en jeu (/overlay/) + jeu de démo (/demo/), compilés par Vite et servis par Nginx.
+  # Pas de depends_on sur api : le front démarre seul (les appels /api renvoient 502 tant que l'API est arrêtée).
   front:
     build: ./front
     restart: always
