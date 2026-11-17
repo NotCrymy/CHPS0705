@@ -3,6 +3,7 @@ package fr.kapture.api.exception;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -11,8 +12,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
- * Format unique des erreurs (contrat {@code API.md}) :
- * {@code {"message": "…"}} avec le status adapté. Couvre les exceptions
+ * Format unique des erreurs (contrats {@code API.md} et {@code docs/V2.md}) :
+ * {@code {"message": "…"}} avec le status adapté (400, 404, 409). Couvre les exceptions
  * métier, les violations Jakarta, les corps JSON illisibles et les paramètres
  * de requête mal typés.
  */
@@ -29,6 +30,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RessourceIntrouvableException.class)
     public ResponseEntity<Map<String, String>> gererRessourceIntrouvable(RessourceIntrouvableException e) {
         return repondre(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
+    /** État incompatible (pas d'overlay connecté, commande déjà traitée) : 409. */
+    @ExceptionHandler(ConflitException.class)
+    public ResponseEntity<Map<String, String>> gererConflit(ConflitException e) {
+        return repondre(HttpStatus.CONFLICT, e.getMessage());
     }
 
     /** Violation Jakarta sur le corps de la requête : 400 avec le premier message. */
@@ -53,7 +60,14 @@ public class GlobalExceptionHandler {
         return repondre(HttpStatus.BAD_REQUEST, "Paramètre invalide : " + e.getName() + ".");
     }
 
+    /**
+     * Type de contenu forcé en JSON : une route SSE ({@code text/event-stream})
+     * qui échoue avant d'ouvrir le flux (404) répond quand même
+     * {@code {"message": …}}, sans négociation de contenu.
+     */
     private static ResponseEntity<Map<String, String>> repondre(HttpStatus status, String message) {
-        return ResponseEntity.status(status).body(Map.of("message", message));
+        return ResponseEntity.status(status)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("message", message));
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import fr.kapture.api.dto.BugRequest;
 import fr.kapture.api.dto.BugResponse;
+import fr.kapture.api.dto.EntreeChronologie;
 import fr.kapture.api.dto.PageResponse;
 import fr.kapture.api.dto.TypeBug;
 import fr.kapture.api.entity.Appariement;
@@ -27,6 +28,10 @@ import fr.kapture.api.repository.SessionRepository;
  * Règles métier des bugs : validation sémantique (les messages en français
  * suivent le contrat {@code API.md}), association aux tables liées, tri et
  * pagination.
+ *
+ * <p>v2 : {@code affichage_id} / {@code apparition_id} optionnels, contrôlés
+ * par {@link ReferencesSession} (existence et même session), et chaque
+ * signalement est publié sur {@code /api/flux} après commit.</p>
  */
 @Service
 @Transactional
@@ -44,12 +49,16 @@ public class BugService {
     private final EvenementRepository evenements;
     private final SessionRepository sessions;
     private final AppariementRepository appariements;
+    private final ReferencesSession references;
+    private final FluxService flux;
 
     public BugService(EvenementRepository evenements, SessionRepository sessions,
-            AppariementRepository appariements) {
+            AppariementRepository appariements, ReferencesSession references, FluxService flux) {
         this.evenements = evenements;
         this.sessions = sessions;
         this.appariements = appariements;
+        this.references = references;
+        this.flux = flux;
     }
 
     /** POST /api/sessions/{id}/bugs — crée le bug et renvoie son id. */
@@ -77,7 +86,12 @@ public class BugService {
         evenement.setPayload(requete.payload());
         evenement.setTimestamp(timestamp);
         evenement.setTypeBug(requete.typeBug());
-        return evenements.save(evenement).getId();
+        evenement.setAffichage(references.affichage(session, requete.affichageId()));
+        evenement.setApparition(references.apparition(session, requete.apparitionId()));
+        evenements.save(evenement);
+
+        flux.publierChronologie(EntreeChronologie.signalement(evenement));
+        return evenement.getId();
     }
 
     /** GET /api/bugs — liste filtrée, triée, paginée. */

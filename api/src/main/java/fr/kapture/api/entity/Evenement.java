@@ -24,7 +24,10 @@ import tools.jackson.databind.JsonNode;
  * <ul>
  *   <li>{@code session_id} → {@link Session} ({@code @ManyToOne}),</li>
  *   <li>{@code id_utilisateur} → {@link Appariement} ({@code @ManyToOne} sur
- *       la colonne unique {@code pseudonyme}).</li>
+ *       la colonne unique {@code pseudonyme}),</li>
+ *   <li>v2 : {@code affichage_id} → {@link Affichage} et {@code apparition_id}
+ *       → {@link Apparition} ({@code @ManyToOne} optionnels) : variante
+ *       affichée au moment du signalement et apparition couverte.</li>
  * </ul>
  *
  * <p>Le DTO renvoyé par {@code GET /api/bugs} se déduit par navigation :
@@ -72,6 +75,16 @@ public class Evenement {
     /** Catégorie : {@code MAP}, {@code AUTRE_JOUEUR}, {@code GRAPHIQUE}, {@code SON}, {@code INTERFACE}, {@code PERFORMANCE}, {@code AUTRE}. */
     @Column(name = "type_bug", length = 30, nullable = false)
     private String typeBug;
+
+    /** v2 : variante affichée quand le joueur a signalé (optionnel). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "affichage_id")
+    private Affichage affichage;
+
+    /** v2 : apparition que le signalement couvre, si connue (optionnel). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "apparition_id")
+    private Apparition apparition;
 
     public Long getId() {
         return id;
@@ -135,5 +148,21 @@ public class Evenement {
 
     public void setTypeBug(String typeBug) {
         this.typeBug = typeBug;
+    }
+
+    public Affichage getAffichage() {
+        return affichage;
+    }
+
+    public void setAffichage(Affichage affichage) {
+        this.affichage = affichage;
+    }
+
+    public Apparition getApparition() {
+        return apparition;
+    }
+
+    public void setApparition(Apparition apparition) {
+        this.apparition = apparition;
     }
 }

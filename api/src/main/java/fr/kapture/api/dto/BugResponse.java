@@ -12,6 +12,8 @@ import tools.jackson.databind.JsonNode;
  * Un bug tel que renvoyé par l'API (contrat v1 : clés JSON en français
  * snake_case, alignées sur les colonnes de la base). Ne contient que les
  * champs autorisés : jamais de données nominatives du testeur.
+ *
+ * <p>v2 : {@code affichage_id} et {@code apparition_id}, nuls si inconnus.</p>
  */
 public record BugResponse(
 
@@ -32,7 +34,11 @@ public record BugResponse(
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
         @JsonProperty("timestamp") Instant timestamp,
 
-        @JsonProperty("type_bug") String typeBug
+        @JsonProperty("type_bug") String typeBug,
+
+        @JsonProperty("affichage_id") Long affichageId,
+
+        @JsonProperty("apparition_id") Long apparitionId
 
 ) {
 
@@ -46,6 +52,9 @@ public record BugResponse(
                 evenement.getDescription() == null ? "" : evenement.getDescription(),
                 evenement.getPayload(),
                 evenement.getTimestamp(),
-                evenement.getTypeBug());
+                evenement.getTypeBug(),
+                // getId() sur un proxy LAZY ne déclenche pas de requête
+                evenement.getAffichage() == null ? null : evenement.getAffichage().getId(),
+                evenement.getApparition() == null ? null : evenement.getApparition().getId());
     }
 }

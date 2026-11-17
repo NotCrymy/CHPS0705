@@ -15,7 +15,7 @@ Contrat de l'API Java. Le front actuel (`front/`) est un POC avec des données f
 
 ## Routes à faire
 
-Deux routes, préfixées `/api`, JSON uniquement. **Aucune autre route** : pas de création de session ni de testeur (gérés par `db/init/02-seed.sql`), pas de route `/end`, pas d'authentification.
+Deux routes, préfixées `/api`, JSON uniquement (les routes ajoutées par la v2 sont décrites dans [`docs/V2.md`](docs/V2.md), voir [§ v2](#v2--overlay-variantes-suivi)). **Aucune autre route v1** : pas de création de session ni de testeur (gérés par `db/init/02-seed.sql`), pas de route `/end`, pas d'authentification.
 
 ### 1. `POST /api/sessions/{id}/bugs` — insérer un bug
 
@@ -95,7 +95,7 @@ Détails du contrat :
 - `total` = nombre de lignes **après filtres, avant pagination** (le client en déduit le nombre de pages).
 - `page` et `taille` sont **renvoyés échoés**.
 - `resultats` contient la tranche `page * taille` → `(page+1) * taille` ; une page vide est acceptable.
-- Chaque bug porte exactement les 8 champs ci-dessus.
+- Chaque bug porte les 8 champs ci-dessus, plus les 2 champs v2 `affichage_id` et `apparition_id` (`null` si inconnus, voir [§ v2](#v2--overlay-variantes-suivi)).
 - `timestamp` en ISO 8601 avec millisecondes, UTC.
 - Tri sur la colonne demandée, puis par `id` en dédoublonneur (même sens que `ordre`) ; `timestamp` chronologique, les autres colonnes en ordre lexicographique.
 - `payload` renvoyé comme objet JSON ; `description` peut être vide (le client affiche alors un tiret).
@@ -176,6 +176,20 @@ Choix d'implémentation conseillés :
 - **Pas de CORS** : le front parle à Nginx, qui relaie `/api/*` vers `api:8080` (même origine).
 - **Seed** : `db/init/02-seed.sql` crée les pseudos (`Storm_X9`, `Nova_K42`, `Echo_R7`, `Vortex_B3`, `Cipher_M8`, `Drift_Z5`) et les sessions 41 à 48. Le popup POC propose par défaut `session=1`, qui n'existe pas en base : renseigner une session du seed (ex. `42`) pour tester l'insertion.
 - **Mode démo du front** : `USE_MOCK = true` dans `front/public/js/shared.js` coupe tous les appels réseau.
+
+## v2 — overlay, variantes, suivi
+
+Le contrat v2 fait foi dans [`docs/V2.md`](docs/V2.md) : overlay en jeu, variantes du bouton pilotables, commandes envoyées au jeu, apparitions de bugs, interactions, chronologie, statistiques par variante, flux SSE (`/api/sessions/{id}/flux`, `/api/flux`). Nouveau code d'erreur : `409` (« Aucun overlay connecté pour cette session. », « Commande déjà traitée. »), même format `{"message": "…"}`.
+
+Ajouts aux deux routes v1 (rétrocompatibles) :
+
+| Route | Champ | Règle | Erreur |
+| --- | --- | --- | --- |
+| `POST /api/sessions/{id}/bugs` | `affichage_id` | optionnel ; affichage existant **de la même session** | `400` « Affichage inconnu. » |
+| `POST /api/sessions/{id}/bugs` | `apparition_id` | optionnel ; apparition existante **de la même session** | `400` « Apparition inconnue. » |
+| `GET /api/bugs` | `affichage_id`, `apparition_id` | renvoyés dans chaque bug, `null` si absents | — |
+
+Chaque bug créé est aussi publié sur `GET /api/flux` (entrée `SIGNALEMENT`).
 
 ## Évolutions prévues (hors POC)
 
